@@ -1,0 +1,68 @@
+from utils.config import load_apps_config
+from resources.PrintAutomation import PrintAutomation
+import psutil
+from loguru import logger
+import subprocess
+
+class SerialKiller:
+    """Classe para finalização de processos.
+    
+    :param process_id: id do processo relacionado a finalização.
+    :param process_type: tipo do processo relacionado a finalização.
+    :param process_machine: máquina relacionada ao processo usado.
+    :returns None:
+    """
+    def __init__(self, process_id: str, process_type: str, process_machine: str) -> None:
+        self.process_id = process_id
+        self.process_type = process_type
+        self.process_machine = process_machine
+        self.printautomation = PrintAutomation(process_id=self.process_id, 
+                                                       process_type=self.process_type, 
+                                                       process_machine=self.process_machine)
+        self.executable_apps = load_apps_config()
+
+    def kill_program_by_name(self, programs_to_kill: list[str] = None, timeout: float = 10) -> True|RuntimeError:
+        """Função para finalizar um ou mais programas pelo nome conforme configurado em apps.json, ex: ["calculadora"].
+
+        :param programs_to_kill: nomes dos programas a serem finalizados conforme arquivo de configuração apps.json, ex: ["calculadora", "msedge"], 
+        se não for passado parâmetro, finalizará todos os programas configurados.
+        :param timeout: tempo (s) a aguardar o processo encerrar após o terminate/kill
+        :returns True: se todos os programas forem finalizados.
+        :raises RunTimeError: se ocorrer qualquer falha.
+        """
+        if not programs_to_kill:
+            programs_to_kill = self.executable_apps.keys()
+            for program_to_kill in programs_to_kill:
+                process = self.executable_apps.get(program_to_kill)
+                if process:
+                    name_of_process = process.get("name_of_process")
+                    try:
+                        procs = [p for p in psutil.process_iter(['name']) if p.info['name'] == name_of_process]
+                        if not procs:
+                            logger.warning(f'Nenhum processo "{name_of_process}" encontrado em execução')
+                            continue
+                        for proc in procs:
+                            proc.terminate()
+                            logger.info(f'Programa "{name_of_process}" finalizado com sucesso!')
+                            continue
+                    except psutil.AccessDenied:
+                        result_kill = subprocess.run(["taskkill", "/F", "/IM", name_of_process],
+                                        capture_output=True,
+                                        text=True,
+                                        timeout=timeout,)
+                        if result_kill.return_code == 0:
+                            logger.info(f'Programa "{name_of_process}" finalizado com sucesso!')
+                            continue
+                        else:
+                            self.printautomation.print_error()
+                            logger.critical(f'O programa "{name_of_process}" não pôde ser finalizado. Verificar possível erro.')
+                            raise RuntimeError(f'O programa "{name_of_process}" não pôde ser finalizado. Verificar possível erro.')
+                    except Exception as error_x:
+                        self.printautomation.print_error()
+                        logger.critical(f'O processo "{name_of_process}" não pôde ser finalizado\nError: {error_x}')
+                        raise RuntimeError(f'O processo "{name_of_process}" não pôde ser finalizado\nError: {error_x}') from error_x
+        return True
+
+if __name__ == '__main__':
+    serialkiller = SerialKiller(process_id='0001', process_type='rpa', process_machine='COOP_0001')
+    serialkiller.kill_program_by_name()
