@@ -1,0 +1,12 @@
+# Normaliza quebras de linha: no repositório sempre LF, no checkout o git converte
+# para o padrão do SO. Evita diffs sujos entre Windows (CRLF) e Linux/Mac (LF).
+* text=auto eol=lf
+
+# Arquivos binários não devem sofrer conversão
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.xlsx binary
+*.xls binary
