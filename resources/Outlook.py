@@ -4,7 +4,7 @@ from datetime import date
 from utils.date_time_utils import date_str_to_int
 
 class Outlook:
-    """Clase para lidar com emails através do outlook.
+    """Classe para lidar com emails através do outlook.
 
     :returns None:
     :raises RunTimeError: caso o Outlook não tenha sido iniciado corretamente.
