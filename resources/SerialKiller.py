@@ -1,3 +1,4 @@
+from typing import Literal
 from utils.config import load_apps_config
 from resources.PrintAutomation import PrintAutomation
 import psutil
@@ -21,7 +22,7 @@ class SerialKiller:
                                                        process_machine=self.process_machine)
         self.executable_apps = load_apps_config()
 
-    def kill_program_by_name(self, programs_to_kill: list[str] = None, timeout: float = 10) -> True|RuntimeError:
+    def kill_program_by_name(self, programs_to_kill: list[str] = None, timeout: float = 10) -> Literal[True]:
         """Função para finalizar um ou mais programas pelo nome conforme configurado em apps.json, ex: ["calculadora"].
 
         :param programs_to_kill: nomes dos programas a serem finalizados conforme arquivo de configuração apps.json, ex: ["calculadora", "msedge"], 
@@ -32,12 +33,13 @@ class SerialKiller:
         """
         if not programs_to_kill:
             programs_to_kill = self.executable_apps.keys()
-            for program_to_kill in programs_to_kill:
-                process = self.executable_apps.get(program_to_kill)
-                if process:
-                    name_of_process = process.get("name_of_process")
+        for program_to_kill in programs_to_kill:
+            process = self.executable_apps.get(program_to_kill)
+            if process:
+                name_of_processes = process.get("name_of_process")
+                for name_of_process in name_of_processes:
                     try:
-                        procs = [p for p in psutil.process_iter(['name']) if p.info['name'] == name_of_process]
+                        procs = [p for p in psutil.process_iter(['name', 'username']) if p.info['name'] == name_of_process and p.info["username"] == 'TSDOMECS\\Automacao']
                         if not procs:
                             logger.warning(f'Nenhum processo "{name_of_process}" encontrado em execução')
                             continue
@@ -46,11 +48,11 @@ class SerialKiller:
                             logger.info(f'Programa "{name_of_process}" finalizado com sucesso!')
                             continue
                     except psutil.AccessDenied:
-                        result_kill = subprocess.run(["taskkill", "/F", "/IM", name_of_process],
+                        result_kill = subprocess.run(["taskkill", "/F", "/IM", name_of_process, "/FI", '"USERNAME eq Automacao"'],
                                         capture_output=True,
                                         text=True,
                                         timeout=timeout,)
-                        if result_kill.return_code == 0:
+                        if result_kill.returncode == 0:
                             logger.info(f'Programa "{name_of_process}" finalizado com sucesso!')
                             continue
                         else:
@@ -65,4 +67,4 @@ class SerialKiller:
 
 if __name__ == '__main__':
     serialkiller = SerialKiller(process_id='0001', process_type='rpa', process_machine='COOP_0001')
-    serialkiller.kill_program_by_name()
+    # serialkiller.kill_program_by_name()

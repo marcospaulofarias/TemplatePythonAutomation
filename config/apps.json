@@ -1,21 +1,21 @@
 {
   "libreofficecalc": {
     "name_of_program": "C:\\Program Files\\LibreOffice\\program\\scalc.exe",
-    "name_of_process": "soffice.bin",
+    "name_of_process": ["soffice.bin"],
     "close_existing": true,
     "wait_existing": 5,
     "new_cmd": false
   },
   "calculadora": {
     "name_of_program": "calc.exe",
-    "name_of_process": "CalculatorApp.exe",
+    "name_of_process": ["CalculatorApp.exe"],
     "close_existing": true,
     "wait_existing": 5,
     "new_cmd": false
   },
   "msedge": {
     "name_of_program": "msedge.exe",
-    "name_of_process": "msedge.exe",
+    "name_of_process": ["msedge.exe"],
     "close_existing": true,
     "wait_existing": 5,
     "new_cmd": true
