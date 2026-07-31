@@ -1,5 +1,7 @@
+import os
 import subprocess
 import time
+from typing import Literal
 import psutil
 from loguru import logger
 from resources.PrintAutomation import PrintAutomation
@@ -22,7 +24,7 @@ class Initializator:
                                                process_machine=self.process_machine)
         self.executable_apps = load_apps_config()
 
-    def run_program(self, programs_to_execute: list[str] = None, wait_existing: float = 10) -> True|ValueError|RuntimeError:
+    def run_program(self, programs_to_execute: list[str] = None, wait_existing: float = 10) -> Literal[True]:
         """Executa um programa no Windows.
 
         :param programs_to_execute: nomes dos programas a serem executados conforme arquivo de configuração apps.json, ex: ['calculadora', 'msedge'].
@@ -40,12 +42,18 @@ class Initializator:
             program = self.executable_apps.get(program_to_execute, None)
             if program:
                 name_of_program = program.get("name_of_program")
-                name_of_process = program.get("name_of_process")
+                name_of_processes = program.get("name_of_process")
                 try:
-                    self.program_in_execute = subprocess.Popen(name_of_program)
+                    if name_of_program.lower().endswith((".lnk", ".url")):
+                        # Atalhos não são executáveis: só o Shell (ShellExecute) sabe resolvê-los,
+                        # junto com os argumentos e o diretório de trabalho gravados no atalho.
+                        os.startfile(name_of_program)
+                        self.program_in_execute = None
+                    else:
+                        self.program_in_execute = subprocess.Popen(name_of_program)
                     # Aqui verifica se o programa está sendo executado com sucesso.
                     if wait_existing:
-                        self._wait_for_process(name_of_process, timeout=wait_existing)
+                        self._wait_for_process(name_of_processes, timeout=wait_existing)
                 except Exception as error_x:
                     logger.critical(f'O programa "{name_of_program}" não pôde ser executado\nError: {error_x}')
                     self.printautomation.print_error()
@@ -55,22 +63,28 @@ class Initializator:
                 raise ValueError(f'Program "{programs_to_execute}" não configurado. Verificar arquivo "config\\apps.json"')
         return True
 
-    def _wait_for_process(self, process_name: str, timeout: float = 5, interval: float = 0.2) -> True|RuntimeError:
+    def _wait_for_process(self, process_names: list[str]|str, timeout: float = 5, interval: float = 0.2) -> Literal[True]:
         """Aguarda um processo aparecer em execução.
 
-        :param process_name: nome do processo a aguardar (ex: 'CalculatorApp.exe').
+        :param process_names: nome(s) do processo a aguardar conforme apps.json, ex: ['CalculatorApp.exe'].
+            Basta que um dos nomes apareça para considerar o programa iniciado.
         :param timeout: tempo máximo (s) de espera.
         :param interval: intervalo (s) entre as verificações.
-        :returns True: se o processo apareceu dentro do timeout. 
+        :returns True: se o processo apareceu dentro do timeout.
         :raises RunTimeError: se o processo não apareceu dentro do timeout.
         """
+        if isinstance(process_names, str):
+            process_names = [process_names]
+        # Windows não diferencia maiúsculas/minúsculas em nomes de processo.
+        expected_processes = {name.lower() for name in process_names}
         fim = time.monotonic() + timeout
         while time.monotonic() < fim:
-            if any(p.info['name'] == process_name for p in psutil.process_iter(['name'])):
+            if any(p.info['name'] and p.info['name'].lower() in expected_processes
+                   for p in psutil.process_iter(['name'])):
                 return True
             time.sleep(interval)
         self.printautomation.print_error()
-        raise RuntimeError(f'O processo "{process_name}" não apareceu dentro do timeout')
+        raise RuntimeError(f'Nenhum dos processos "{process_names}" apareceu dentro do timeout')
 
 if __name__ == '__main__':
     initializator = Initializator(process_id='0001', process_type='rpa', process_machine='COOP_0001')
