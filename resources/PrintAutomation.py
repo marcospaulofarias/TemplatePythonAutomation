@@ -34,8 +34,10 @@ class PrintAutomation:
         :returns None
         """
         try:
-            target = element_to_print if element_to_print else auto.GetRootControl()
-            target.CaptureToImage(savePath=self._build_save_path())
+            if element_to_print:
+                target = element_to_print
+                target.CaptureToImage(savePath=self._build_save_path())
+            auto.GetRootControl().CaptureToImage(savePath=self._build_save_path())
         except Exception as error:
             logger.warning(f"Falha ao capturar do elemento, tentando tela cheia: {error}")
             try:
