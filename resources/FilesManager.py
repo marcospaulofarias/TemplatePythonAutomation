@@ -11,17 +11,21 @@ class FilesManager:
         
         :returns None:
         """
+        logger.debug(f"FilesManager.__init__: process_id={process_id} process_type={process_type} process_machine={process_machine}")
         self.pathmanager = PathManager()
         self.printautomation = PrintAutomation(process_id=process_id, process_type=process_type, process_machine=process_machine)
 
-    def _list_files(self, directory: str) -> list|RuntimeError:
+    def _list_files(self, directory: str) -> list:
         """Lista todos os arquivos em um diretório específico.
         
         :param directory: Caminho completo do diretório a ser listado.
         :returns: Lista de caminhos completos dos itens (arquivos e subdiretórios) no diretório.
         :raises RunTimeError: caso ocorra algum erro ao listar os arquivos, ex: diretório inexistente."""
+        logger.debug(f"FilesManager._list_files: directory={directory}")
         try:
-            return [os.path.join(directory, file_name) for file_name in listdir(directory)]
+            result = [os.path.join(directory, file_name) for file_name in listdir(directory)]
+            logger.debug(f"FilesManager._list_files: found {len(result)} entries")
+            return result
         except Exception as error_x:
             self.printautomation.print_error()
             logger.critical(f'Erro ao tentar listar os arquivos em "{directory}".\nErro: {error_x}.')
@@ -33,31 +37,36 @@ class FilesManager:
         :param file_to_remove: Caminho completo + arquivo a ser removido.
         :returns None:
         :raises RunTimeError: caso não um arquivo exista e não foi possível remove-lo."""
+        logger.debug(f"FilesManager._rm_file: file_to_remove={file_to_remove}")
         try:
             # remove files or remove directories recursively
             if os.path.isdir(file_to_remove):
                 shutil.rmtree(file_to_remove)
             else:
                 os.remove(file_to_remove)
+            logger.debug(f"FilesManager._rm_file: removed {file_to_remove}")
         except FileNotFoundError:
+            logger.debug(f"FilesManager._rm_file: file not found {file_to_remove}")
             ...  # Se o arquivo não existir, não faz nada
         except Exception as error_x:
             self.printautomation.print_error()
             logger.critical(f'Erro ao tentar remover o arquivo "{file_to_remove}".\nErro: {error_x}.')
             raise RuntimeError(f'Erro ao tentar remover o arquivo "{file_to_remove}".\nErro: {error_x}.') from error_x
         
-    def clean_paths(self, paths_to_clean: list) -> None|RuntimeError:
+    def clean_paths(self, paths_to_clean: list) -> None:
         """Limpa os diretórios especificados, removendo todos os arquivos dentro deles.
         
         :param paths_to_clean: Lista de caminhos completos dos diretórios a serem limpos.
         :returns None:
         :raises RunTimeError: caso o diretório não tenha sido parcial ou completamente limpo, isto é, todas pastas e arquivos dentro deste diretório não tenham sido excluídas."""
+        logger.debug(f"FilesManager.clean_paths: paths_to_clean={paths_to_clean}")
         for dir_path in paths_to_clean:
             try:
                 for file_name in listdir(dir_path):
                     full_path = os.path.join(dir_path, file_name)
                     if os.path.isfile(full_path):
                         self._rm_file(full_path)
+                logger.debug(f"FilesManager.clean_paths: cleaned {dir_path}")
             except Exception as error_x:
                 self.printautomation.print_error()
                 logger.critical(f'Erro ao tentar limpar o diretório "{dir_path}".\nErro: {error_x}.')
@@ -69,8 +78,11 @@ class FilesManager:
         :param file: arquivo para verificar a existência, ex: "{caminho}+{arquivo.extensão}".
         :returns True: se or arquivo existir.
         :returns False: se o arquivo não existir."""
+        logger.debug(f"FilesManager.verify_exists_file: file={file}")
         try:
-            return path.exists(file)
+            exists = path.exists(file)
+            logger.debug(f"FilesManager.verify_exists_file: {file} exists={exists}")
+            return exists
         except Exception as error_x:
             logger.critical(f'Erro ao verificar se o arquivo "{file}" existe.\nErro: {error_x}.')
             raise FileExistsError(f'Erro ao verificar se o arquivo "{file}" existe.\nErro: {error_x}.') from error_x

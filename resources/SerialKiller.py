@@ -17,6 +17,7 @@ class SerialKiller:
         self.process_id = process_id
         self.process_type = process_type
         self.process_machine = process_machine
+        logger.debug(f"SerialKiller.__init__: process_id={process_id} process_type={process_type} process_machine={process_machine}")
         self.printautomation = PrintAutomation(process_id=self.process_id, 
                                                        process_type=self.process_type, 
                                                        process_machine=self.process_machine)
@@ -31,15 +32,18 @@ class SerialKiller:
         :returns True: se todos os programas forem finalizados.
         :raises RunTimeError: se ocorrer qualquer falha.
         """
+        logger.debug(f"SerialKiller.kill_program_by_name: programs_to_kill={programs_to_kill} timeout={timeout}")
         if not programs_to_kill:
             programs_to_kill = self.executable_apps.keys()
         for program_to_kill in programs_to_kill:
+            logger.debug(f"SerialKiller.kill_program_by_name: program_to_kill={program_to_kill}")
             process = self.executable_apps.get(program_to_kill)
             if process:
                 name_of_processes = process.get("name_of_process")
                 for name_of_process in name_of_processes:
+                    logger.debug(f"SerialKiller.kill_program_by_name: checking process {name_of_process}")
                     try:
-                        procs = [p for p in psutil.process_iter(['name', 'username']) if p.info['name'] == name_of_process and p.info["username"] == 'TSDOMECS\\Automacao']
+                        procs = [p for p in psutil.process_iter(['name', 'username']) if p.info['name'] == name_of_process and p.info["username"] == 'iway\\marcos.farias']
                         if not procs:
                             logger.warning(f'Nenhum processo "{name_of_process}" encontrado em execução')
                             continue
@@ -48,7 +52,7 @@ class SerialKiller:
                             logger.info(f'Programa "{name_of_process}" finalizado com sucesso!')
                             continue
                     except psutil.AccessDenied:
-                        result_kill = subprocess.run(["taskkill", "/F", "/IM", name_of_process, "/FI", '"USERNAME eq Automacao"'],
+                        result_kill = subprocess.run(["taskkill", "/F", "/IM", name_of_process, "/FI", '"USERNAME eq marcos.farias"'],
                                         capture_output=True,
                                         text=True,
                                         timeout=timeout,)

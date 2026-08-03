@@ -19,6 +19,7 @@ class Initializator:
         self.process_id = process_id
         self.process_type = process_type
         self.process_machine = process_machine
+        logger.debug(f"Initializator.__init__: process_id={process_id} process_type={process_type} process_machine={process_machine}")
         self.printautomation = PrintAutomation(process_id=self.process_id, 
                                                process_type=self.process_type, 
                                                process_machine=self.process_machine)
@@ -38,6 +39,7 @@ class Initializator:
         :raises ValueErros: se o programa não foi configurado no arquivo apps.json.
         :raises RunTimeError: se o programa não pôde ser executado com sucesso.
         """
+        logger.debug(f"Initializator.run_program: programs_to_execute={programs_to_execute} wait_existing={wait_existing}")
         for program_to_execute in programs_to_execute:
             program = self.executable_apps.get(program_to_execute, None)
             if program:
@@ -88,5 +90,5 @@ class Initializator:
 
 if __name__ == '__main__':
     initializator = Initializator(process_id='0001', process_type='rpa', process_machine='COOP_0001')
-    print(initializator.executable_apps)
+    logger.debug(f"Initializator demo executable_apps={initializator.executable_apps}")
     initializator.run_program(programs_to_execute=["calculadora", "msedge", ])

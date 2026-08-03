@@ -3,16 +3,22 @@ from _ctypes import COMError
 from loguru import logger
 import uiautomation as auto
 from resources.PrintAutomation import PrintAutomation
+from resources.logger_config import configure_logger
 
 class UiAutomationClass:
     """Classe para automação de interface gráfica RPA usando uiautomation.
 
+    O logger global é configurado para gravar em arquivo de log local quando
+    `process_id`, `process_type` e `process_machine` são informados.
+    O arquivo de log padrão é gerado em `./logs/<process_id>_<process_type>_<process_machine>.log`.
+
     :param process_id: Identificador do processo para logs e rastreamento.
     :param process_type: Tipo do processo para logs e rastreamento.
     :param process_machine: Nome da máquina para logs e rastreamento.
-    :returns None:
+    :returns: None
     """
     def __init__(self, process_id: str, process_type: str, process_machine: str) -> None:
+        configure_logger(process_id=process_id, process_type=process_type, process_machine=process_machine)
         self.printautomation = PrintAutomation(process_id=process_id,
                                                process_type=process_type,
                                                process_machine=process_machine)
@@ -35,27 +41,30 @@ class UiAutomationClass:
         :returns: dicionário {ControlTypeName: função de interação}.
         :raises ValueError: se o tipo de interação não for suportado.
         """
+        logger.debug(f"get_interactions: interaction_type={interaction_type}")
         match interaction_type:
             case "sendkeys":
-                return {
+                interactions = {
                     "EditControl": lambda element, value=None: element.SendKeys(value),
                     "TextControl": lambda element, value=None: element.SendKeys(value),
                     "ButtonControl": lambda element, value=None: element.GetInvokePattern().Invoke(),
                     "RadioButtonControl": lambda element, value=None: element.GetLegacyIAccessiblePattern().DoDefaultAction(),
                 }
             case "setvalue":
-                return {
+                interactions = {
                     "EditControl": lambda element, value=None: element.GetValuePattern().SetValue(value),
                     "TextControl": lambda element, value=None: element.GetValuePattern().SetValue(value),
                     "ButtonControl": lambda element, value=None: element.GetInvokePattern().Invoke(),
                 }
             case _:
                 raise ValueError(f"Interação inválida: '{interaction_type}'. Use 'sendkeys' ou 'setvalue'")
+        logger.debug(f"interactions map criado para {interaction_type}")
+        return interactions
 
     def find_element(self, element_type: str, 
                      params: dict, 
                      screen: auto.WindowControl = None, 
-                     max_search_seconds: float = 30) -> auto.Control|ValueError:
+                     max_search_seconds: float = 30) -> auto.Control:
         """Captura um elemento usando os parâmetros fornecidos.
 
         :param element_type: tipo do elemento a ser buscado (ex: 'Button', 'Edit', 'Window').
@@ -65,17 +74,21 @@ class UiAutomationClass:
         :returns: o controle encontrado.
         :raises ValueError: se não encontrar o elemento.
         """
+        logger.debug(f"find_element: element_type={element_type} params={params} screen={screen} max_search_seconds={max_search_seconds}")
         if not self._verify_dict_params(dict_params=params):
+            logger.debug("find_element: parâmetros inválidos ou todos nulos")
             raise ValueError("É necessário passar no mínimo parâmetro")
-        return self._try_element(element_type=element_type, 
+        element = self._try_element(element_type=element_type, 
                                  params=params, screen=screen, 
                                  max_search_seconds=max_search_seconds)
+        logger.debug(f"find_element: elemento retornado para {element_type} {params}")
+        return element
 
     def interact_element(self, element: auto.Control, 
                          value: str = None,
                          max_interact_seconds: float = 20, 
                          interval: float = 1.0, 
-                         interaction_type: str = 'sendkeys') -> bool|RuntimeError:
+                         interaction_type: str = 'sendkeys') -> bool:
         """Tenta interagir com o elemento até atingir o timeout.
 
         :param element: elemento a ser interagido (uiautomation.Control).
@@ -87,10 +100,12 @@ class UiAutomationClass:
         :returns True: se a interação for bem-sucedida.
         :raises RuntimeError: se ocorrer qualquer falha.
         """
+        logger.debug(f"interact_element: ControlTypeName={element.ControlTypeName} value={value} interaction_type={interaction_type} max_interact_seconds={max_interact_seconds} interval={interval}")
         interactions = self.get_interactions(interaction_type=interaction_type)
         method_element = interactions.get(element.ControlTypeName)
         if not method_element:
             self.printautomation.print_error()
+            logger.debug(f"interact_element: interação não definida para {element.ControlTypeName}")
             raise ValueError(f"Nenhuma interação definida para o tipo: {element.ControlTypeName}")
 
         deadline = time.monotonic() + max_interact_seconds
@@ -100,9 +115,11 @@ class UiAutomationClass:
                 result = method_element(element, value)
                 if result is False:
                     raise RuntimeError("A interação retornou False")
+                logger.debug(f"interact_element: interação bem-sucedida para {element.ControlTypeName}")
                 return True
             except Exception as error_x:
                 last_error = error_x
+                logger.warning(f"interact_element: tentativa falhou para {element.ControlTypeName}: {error_x}")
             remaining = deadline - time.monotonic()
             if remaining <= 0:
                 break
@@ -122,7 +139,7 @@ class UiAutomationClass:
             return False
         return True
     
-    def _try_element(self, element_type: str, params: dict, max_search_seconds: float = 20, search_interval: float = 1.0, screen: auto.WindowControl = None) -> auto.Control|ValueError|LookupError:
+    def _try_element(self, element_type: str, params: dict, max_search_seconds: float = 20, search_interval: float = 1.0, screen: auto.WindowControl = None) -> auto.Control:
         """Busca um elemento repetidamente até encontrá-lo ou estourar o timeout.
 
         :param element_type: tipo do elemento a ser buscado (ex: 'Button', 'Edit', 'Window').
@@ -155,6 +172,7 @@ class UiAutomationClass:
                     elif screen:
                         screen.SetActive()
                         screen.SetFocus()
+                    logger.debug(f"{element_type} encontrado: {params}")
                     return element
             except COMError as error_x:
                 # O provider UIA do app falha se a árvore mudar durante a varredura
@@ -181,6 +199,7 @@ class UiAutomationClass:
         :returns: lista dos controles de topo encontrados.
         :raises ValueError: se element_type for informado e não existir em self.controls.
         """
+        logger.debug(f"get_elements_root: element_type={element_type} process_id={process_id}")
         if element_type and element_type not in self.controls:
             raise ValueError(f"Tipo inválido: {element_type}. Use um de {list(self.controls)}")
         expected_type = self.controls[element_type].__name__ if element_type else None
@@ -196,4 +215,5 @@ class UiAutomationClass:
                 elements_root.append(element)
             except Exception as error_x:
                 logger.warning(f'Não foi possível ler um controle de topo: {error_x}')
+        logger.debug(f"get_elements_root: retornando {len(elements_root)} elementos")
         return elements_root

@@ -1,6 +1,7 @@
 from pathlib import Path
 from loguru import logger
 from resources.PathManager import PathManager
+from resources.logger_config import configure_logger
 from utils.date_time_utils import get_numeric_timestamp
 import uiautomation as auto
 
@@ -16,6 +17,7 @@ class PrintAutomation:
         self.process_id = process_id
         self.process_type = process_type
         self.process_machine = process_machine
+        configure_logger(process_id=process_id, process_type=process_type, process_machine=process_machine)
 
     def _build_save_path(self) -> str:
         """Retorna o nome do caminho+nome_do_arquivo a ser gerado com base nas informações do processo, data e hora.

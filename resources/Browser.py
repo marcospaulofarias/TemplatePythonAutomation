@@ -10,6 +10,7 @@ from loguru import logger
 from resources.PrintAutomation import PrintAutomation
 import requests
 from selenium.webdriver.remote.webelement import WebElement
+from resources.SerialKiller import SerialKiller
 
 class Browser(UiAutomationClass):
     """Classe para automação web usando UiAutomation e Selenium.
@@ -33,22 +34,26 @@ class Browser(UiAutomationClass):
 
     def __init__(self, process_id: str, process_type: str, process_machine: str, headless: bool = False) -> None:
         super().__init__(process_id=process_id, process_type=process_type, process_machine=process_machine)
+        logger.debug(f"Browser.__init__: process_id={process_id} process_type={process_type} process_machine={process_machine} headless={headless}")
         self.pathmanager = PathManager()
         self.driver = None
         self.by_methods = dict(self.BY_METHODS)
         self.process_id = process_id
         self.process_type = process_type
         self.process_machine = process_machine
+        self.serialkiller = SerialKiller(process_id=self.process_id, process_type=self.process_type, process_machine=self.process_machine)
         self.printautomation = PrintAutomation(process_id=self.process_id, process_type=self.process_type, process_machine=self.process_machine)
         self.headless = headless
 
-    def _open_browser(self) -> None|RuntimeError:
+    def _open_browser(self) -> None:
         """Função privada para iniciar o browser edge.
 
         :returns None:
         :raises RunTimeError: se houver erro ao "abrir" o navegador.
         """
+        logger.debug(f"Browser._open_browser: driver={self.driver} headless={self.headless}")
         if not self.driver:
+            self.serialkiller.kill_program_by_name(programs_to_kill=['msedge'])
             try:
                 options = webdriver.EdgeOptions()
                 options.add_argument("--no-sandbox")
@@ -60,12 +65,13 @@ class Browser(UiAutomationClass):
                     options.add_argument("--disable-gpu")
                     options.add_argument("--window-size=1920,1080")
                 self.driver = webdriver.Edge(options=options)
+                logger.debug("Browser._open_browser: navegador iniciado com sucesso")
             except Exception as error_x:
                 self.printautomation.print_error()
                 logger.critical(f'Erro ao abrir o navegador\nERROR: {error_x}')
                 raise RuntimeError("Erro ao abrir o navegador") from error_x
 
-    def _verify_site_connection(self, url_site: str, try_repetitions: int = 3, time_new_retry: float = 1.0) -> True|RuntimeError:
+    def _verify_site_connection(self, url_site: str, try_repetitions: int = 3, time_new_retry: float = 1.0) -> True:
         """Função para verificar a conexão com um site antes de navegar até ele.
         
         Exemplo correto: https://www.google.com
@@ -77,11 +83,13 @@ class Browser(UiAutomationClass):
         :returns True: se conseguir realizar a conexão com o site.
         :raises RunTimeError: se não conseguir realizar a conexão com o site.
         """
+        logger.debug(f"Browser._verify_site_connection: url_site={url_site} try_repetitions={try_repetitions} time_new_retry={time_new_retry}")
         last_error = None
-        for _ in range(try_repetitions):
+        for attempt in range(try_repetitions):
             try:
                 response = requests.get(url_site, timeout=10)
                 if response.status_code == 200:
+                    logger.debug(f"Browser._verify_site_connection: conexao OK na tentativa {attempt + 1}")
                     return True
             except Exception as error_x:
                 last_error = error_x
@@ -93,7 +101,8 @@ class Browser(UiAutomationClass):
             f'Não foi possível acessar o site {url_site} após {try_repetitions} tentativas'
         ) from last_error
 
-    def get_site(self, url_site: str, try_repetitons: int, time_new_retry: float, test_connection_site: bool = True) -> None|RuntimeError:
+    def get_site(self, url_site: str, try_repetitons: int = 5, time_new_retry: float = 1, test_connection_site: bool = True) -> None:
+        logger.debug(f"Browser.get_site: url_site={url_site} try_repetitons={try_repetitons} time_new_retry={time_new_retry} test_connection_site={test_connection_site}")
         """Acessa uma página web a partir de uma URL completa.
 
         Exemplo correto: https://www.google.com
@@ -129,7 +138,8 @@ class Browser(UiAutomationClass):
             clean: bool = True,
             word_to_remove: str = None,
             max_attempts: int = 3,
-        ) -> None|ValueError:
+        ) -> None:
+        logger.debug(f"Browser.keyboard: word={word} key_down={key_down} just_numbers={just_numbers} verify={verify} clean={clean} word_to_remove={word_to_remove} max_attempts={max_attempts}")
         """Interage com campos de texto editáveis.
 
         :param element: elemento web de texto editável.
@@ -174,6 +184,7 @@ class Browser(UiAutomationClass):
                 expected_value = word.replace(word_to_remove, "")
 
             if current_value == expected_value:
+                logger.debug(f"Browser.keyboard: sucesso na tentativa {attempt} valor='{current_value}'")
                 return
 
             logger.warning(
@@ -193,7 +204,7 @@ class Browser(UiAutomationClass):
                          repetitions: int=30, 
                          element: any = None, 
                          click: bool = False, 
-                         update: bool = False) -> WebElement|True|LookupError:
+                         update: bool = False) -> WebElement:
         """Tenta capturar e/ou interagir com um elemento web por repetitions vezes.
 
         :param method: método usado para identificar o elemento [By.NAME, By.CLASS_NAME, By.XPATH, etc.].
@@ -209,6 +220,7 @@ class Browser(UiAutomationClass):
         :raises LookupError: quando o elemento não é encontrado dentro de repetitions tentativas.
         """
         last_error = None
+        logger.debug(f"Browser.element_response: method={method} element_id={element_id} repetitions={repetitions} click={click} update={update} element={element}")
         if element is None:
             for _ in range(repetitions):
                 if update and (_ + 1) % 20 == 0:
@@ -225,6 +237,7 @@ class Browser(UiAutomationClass):
                     return result
                 except Exception as error_x:
                     last_error = error_x
+                    logger.warning(f"Browser.element_response: tentativa {_ + 1} falhou: {error_x}")
                     logger.error(f'{message_error}: {error_x}')
                 sleep(1)
         else:
@@ -236,13 +249,14 @@ class Browser(UiAutomationClass):
                     return result
                 except Exception as error_x:
                     last_error = error_x
+                    logger.warning(f"Browser.element_response: tentativa {_ + 1} falhou em element.find_element: {error_x}")
                     logger.error(f'{message_error}: {error_x}')
                 sleep(1)
         logger.critical(f'Não foi possível capturar o elemento após {repetitions} tentativas')
         self.printautomation.print_error()
         raise LookupError(f'Não foi possível capturar o elemento após {repetitions} tentativas') from last_error
     
-    def elements_response(self, method: By, element_id: str, message_success: str, message_error: str, repetitions: int=30, element: any = None) -> list[WebElement]|LookupError:
+    def elements_response(self, method: By, element_id: str, message_success: str, message_error: str, repetitions: int=30, element: any = None) -> list[WebElement]:
         """Tenta capturar uma ou mais ocorrências de um elemento web repetidamente.
 
         :param method: método usado para identificar o(s) elemento(s) [By.NAME, By.CLASS_NAME, By.XPATH, etc.].
@@ -255,6 +269,7 @@ class Browser(UiAutomationClass):
         :raises LookupError: Quando nenhum elemento é encontrado após as tentativas.
         """
         last_error = None
+        logger.debug(f"Browser.elements_response: method={method} element_id={element_id} repetitions={repetitions} element={element}")
         if element is None:
             for _ in range(repetitions):
                 logger.info(f'TENTATIVA {_ + 1} de {repetitions}')
@@ -267,6 +282,7 @@ class Browser(UiAutomationClass):
                     logger.error(f'{message_error}: Nenhum elemento encontrado')
                 except Exception as error_x:
                     last_error = error_x
+                    logger.warning(f"Browser.elements_response: tentativa {_ + 1} falhou: {error_x}")
                     logger.error(f'{message_error}: {error_x}')
                 sleep(1)
         else:
@@ -278,16 +294,18 @@ class Browser(UiAutomationClass):
                         logger.info(message_success)
                         return result
                     last_error = ValueError('Nenhum elemento encontrado')
+                    logger.warning(f"Browser.elements_response: tentativa {_ + 1} não encontrou elementos")
                     logger.error(f'{message_error}: Nenhum elemento encontrado')
                 except Exception as error_x:
                     last_error = error_x
+                    logger.warning(f"Browser.elements_response: tentativa {_ + 1} falhou: {error_x}")
                     logger.error(f'{message_error}: {error_x}')
                 sleep(1)
         logger.critical(f'Não foi possível capturar o(s) elemento(s) após {repetitions} tentativas')
         self.printautomation.print_error()
         raise LookupError(f'Não foi possível capturar o(s) elemento(s) após {repetitions} tentativas') from last_error
     
-    def try_click(self, element, repetitions: int = 30) -> True|RuntimeError:
+    def try_click(self, element, repetitions: int = 30) -> True:
         """Tenta por repetitions vezes clicar em um elemento web.
 
         :param element: elemento web para clicar.
@@ -295,13 +313,16 @@ class Browser(UiAutomationClass):
         :returns True: se o clique foi realizado.
         :raises RunTimeError: se não conseguir "clicar" no elemento.
         """
+        logger.debug(f"Browser.try_click: repetitions={repetitions} element={element}")
         for _ in range(repetitions):
             logger.info(f'TENTATIVA {_ + 1} de {repetitions}')
             try:
                 element.click()
                 logger.info('Clique realizado com sucesso')
+                logger.debug(f"Browser.try_click: sucesso na tentativa {_ + 1}")
                 return True
             except Exception as error_x:
+                logger.warning(f'Browser.try_click: tentativa {_ + 1} falhou: {error_x}')
                 logger.error(f'Erro ao tentar clicar no elemento: {error_x}')
             sleep(1)
         logger.critical(f'Não foi possível clicar no elemento após {repetitions} tentativas')
