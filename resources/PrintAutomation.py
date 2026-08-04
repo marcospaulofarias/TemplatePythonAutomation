@@ -39,7 +39,7 @@ class PrintAutomation:
                 target.CaptureToImage(savePath=self._build_save_path())
             auto.GetRootControl().CaptureToImage(savePath=self._build_save_path())
         except Exception as error:
-            logger.warning(f"Falha ao capturar do elemento, tentando tela cheia: {error}")
+            logger.warning(f"Falha ao capturar do elemento ou da tela cheia: {error}")
             try:
                 auto.GetRootControl().CaptureToImage(savePath=self._build_save_path())
             except Exception as error_fallback:
