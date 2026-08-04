@@ -89,6 +89,7 @@ class BancoCentral(Browser):
         self._open_converter_menu()
         coin_options = self._get_coin_options()
         coins = []
+        teste = 1
         for coin in coin_options:
             inner = coin.get_attribute("innerHTML") or coin.text
             coin_name = inner.strip()
@@ -96,6 +97,9 @@ class BancoCentral(Browser):
                 "name": coin_name,
                 "element": coin
             })
+            teste += 1
+            if teste >= 5:
+                break
         self._open_converter_menu()
         logger.debug(f"BancoCentral.get_all_coins: capturou {len(coins)} moedas")
         return coins
