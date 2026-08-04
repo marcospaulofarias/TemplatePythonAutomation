@@ -73,7 +73,7 @@ class AutomationCoins:
             line += 1
         self._send_email(send_to=send_to, files_to_send=files_to_send)
 
-    def run(self, multiply_value: float, files_to_send: list[str], try_attempts: int, time_to_retry: float = 1) -> None:
+    def run(self, *params, multiply_value: float, files_to_send: list[str], try_attempts: int, time_to_retry: float = 1) -> None:
         logger.debug(f"AutomationCoins.run: files_to_send={files_to_send} multiply_value={multiply_value} try_attempts={try_attempts} time_to_retry={time_to_retry}")
         users = self.get_users()
         users_ready = self.txt.read_txt(txt_file='.\\workbooks\\users_ready.txt')
