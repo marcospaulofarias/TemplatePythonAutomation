@@ -64,7 +64,7 @@ class UiAutomationClass:
     def find_element(self, element_type: str, 
                      params: dict, 
                      screen: auto.WindowControl = None, 
-                     max_search_seconds: float = 30) -> auto.Control:
+                     max_search_seconds: float = 30, raise_on_error: bool = True) -> auto.Control:
         """Captura um elemento usando os parâmetros fornecidos.
 
         :param element_type: tipo do elemento a ser buscado (ex: 'Button', 'Edit', 'Window').
@@ -80,7 +80,7 @@ class UiAutomationClass:
             raise ValueError("É necessário passar no mínimo parâmetro")
         element = self._try_element(element_type=element_type, 
                                  params=params, screen=screen, 
-                                 max_search_seconds=max_search_seconds)
+                                 max_search_seconds=max_search_seconds, raise_on_error=raise_on_error)
         logger.debug(f"find_element: elemento retornado para {element_type} {params}")
         return element
 
@@ -139,7 +139,7 @@ class UiAutomationClass:
             return False
         return True
     
-    def _try_element(self, element_type: str, params: dict, max_search_seconds: float = 20, search_interval: float = 1.0, screen: auto.WindowControl = None) -> auto.Control:
+    def _try_element(self, element_type: str, params: dict, max_search_seconds: float = 20, search_interval: float = 1.0, screen: auto.WindowControl = None, raise_on_error: bool = True) -> auto.Control:
         """Busca um elemento repetidamente até encontrá-lo ou estourar o timeout.
 
         :param element_type: tipo do elemento a ser buscado (ex: 'Button', 'Edit', 'Window').
@@ -183,7 +183,9 @@ class UiAutomationClass:
             except Exception as error_x:
                 self.printautomation.print_error(element_to_print=screen)
                 logger.critical(f"Erro ao buscar {element_type}: {error_x}")
-                raise LookupError(f"Erro ao buscar {element_type}: {error_x}") from error_x
+                if raise_on_error:
+                    raise LookupError(f"Erro ao buscar {element_type}: {error_x}") from error_x
+                return None
 
         self.printautomation.print_error(element_to_print=screen)
         logger.critical(f"{element_type} não encontrado: {params} | último erro: {last_error}")
