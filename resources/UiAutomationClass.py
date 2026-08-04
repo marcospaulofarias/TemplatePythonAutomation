@@ -30,7 +30,9 @@ class UiAutomationClass:
             "Window": auto.WindowControl,
             "Panel": auto.PaneControl,
             "ComboBox": auto.ComboBoxControl,
-            "RadioButton": auto.RadioButtonControl
+            "RadioButton": auto.RadioButtonControl,
+            "MenuItem": auto.MenuItemControl,
+            "CheckBox": auto.CheckBoxControl,
         }
 
     def get_interactions(self, interaction_type: str = "sendkeys") -> dict:
@@ -49,12 +51,17 @@ class UiAutomationClass:
                     "TextControl": lambda element, value=None: element.SendKeys(value),
                     "ButtonControl": lambda element, value=None: element.GetInvokePattern().Invoke(),
                     "RadioButtonControl": lambda element, value=None: element.GetLegacyIAccessiblePattern().DoDefaultAction(),
+                    "MenuItemControl": lambda element, value=None: element.GetInvokePattern().DoDefaultAction(),
+                    "CheckBoxControl": lambda element, value=None: element.GetTogglePattern().DoDefaultAction(),
                 }
             case "setvalue":
                 interactions = {
                     "EditControl": lambda element, value=None: element.GetValuePattern().SetValue(value),
                     "TextControl": lambda element, value=None: element.GetValuePattern().SetValue(value),
                     "ButtonControl": lambda element, value=None: element.GetInvokePattern().Invoke(),
+                    "RadioButtonControl": lambda element, value=None: element.GetLegacyIAccessiblePattern().DoDefaultAction(),
+                    "MenuItemControl": lambda element, value=None: element.GetInvokePattern().DoDefaultAction(),
+                    "CheckBoxControl": lambda element, value=None: element.GetTogglePattern().DoDefaultAction(),
                 }
             case _:
                 raise ValueError(f"Interação inválida: '{interaction_type}'. Use 'sendkeys' ou 'setvalue'")
