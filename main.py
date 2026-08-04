@@ -1,8 +1,17 @@
 from use_cases.AutomationCoins import AutomationCoins
+from resources.DataBase import DataBase
 
 if __name__ == '__main__':
-    automationcoins = AutomationCoins(process_id='0001', process_type='rpa', process_machine='COOP_0001', necessary_apps=['calculadora'])
-    automationcoins.run(files_to_send=['C:\\Users\\marcos.farias\\Downloads\\CotacaoMoedas.txt', 
-                                       'C:\\Users\\marcos.farias\\Downloads\\CotacaoMoedas.xlsx'], 
-                                       multiply_value=3, try_attempts=3)
+    database = DataBase()
+    processes = database.get_proccesses()
+
+    if processes:
+        for process in processes:
+            process_id, process_type, process_machine = process
+            input(f'process_id: {process_id}, process_type: {process_type}, process_machine: {process_machine}')
+
+            automationcoins = AutomationCoins(process_id=process_id, process_type=process_type, process_machine=process_machine, necessary_apps=['calculadora'])
+            automationcoins.run(files_to_send=[f'C:\\Users\\user\\Downloads\\CotacaoMoedas{process_id}.txt', 
+                                            f'C:\\Users\\user\\Downloads\\CotacaoMoedas{process_id}.xlsx'], 
+                                            multiply_value=3, try_attempts=3)
     
