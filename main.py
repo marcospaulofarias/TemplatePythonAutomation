@@ -8,7 +8,6 @@ if __name__ == '__main__':
     if processes:
         for process in processes:
             process_id, process_type, process_machine = process
-            input(f'process_id: {process_id}, process_type: {process_type}, process_machine: {process_machine}')
 
             automationcoins = AutomationCoins(process_id=process_id, process_type=process_type, process_machine=process_machine, necessary_apps=['calculadora'])
             automationcoins.run(files_to_send=[f'C:\\Users\\user\\Downloads\\CotacaoMoedas{process_id}.txt', 
