@@ -1,7 +1,8 @@
+from loguru import logger
 from resources.EnvManager import EnvManager
 
 if __name__ == '__main__':
     envmanager = EnvManager()
 
-    print(envmanager.paths)
+    logger.debug(envmanager.paths)
     

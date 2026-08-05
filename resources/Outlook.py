@@ -4,12 +4,13 @@ from datetime import date
 from utils.date_time_utils import date_str_to_int
 
 class Outlook:
-    """Clase para lidar com emails através do outlook.
+    """Classe para lidar com emails através do outlook.
 
     :returns None:
     :raises RunTimeError: caso o Outlook não tenha sido iniciado corretamente.
     """
-    def __init__(self) -> None|RuntimeError:
+    def __init__(self) -> None:
+
         try:
             self.outlook_app = win32com.client.Dispatch("Outlook.Application")
             self.namespace = self.outlook_app.GetNamespace("MAPI")
@@ -18,7 +19,7 @@ class Outlook:
                 f"Erro ao iniciar Outlook: {error_x}"
             ) from error_x
 
-    def _get_folder(self, email_account: str, name_folder: str) -> win32com.client.CDispatch|RuntimeError:
+    def _get_folder(self, email_account: str, name_folder: str) -> win32com.client.CDispatch:
         """Função para selecionar uma pasta no outlook, ex: "Caixa de entrada".
 
         :param email_account: Nome da conta a ser usada para buscar a pasta, ex: "email@email.com".
@@ -26,10 +27,12 @@ class Outlook:
         :returns: Conta do outlook classic (objeto COM).
         :raises RunTimeError: caso a pasta Outlook desejada não tenha sido, selecionada, ex: pasta inexistente.
         """
+        logger.debug(f"Outlook._get_folder: email_account={email_account} name_folder={name_folder}")
         try:
             account = self._get_account_email(email_account)
             if account:
                 folder = account.Folders.Item(name_folder)
+                logger.debug(f"Outlook._get_folder: folder found {name_folder}")
                 return folder
             else:
                 logger.error(f'A pasta "{name_folder}" não foi selecionada')
@@ -37,15 +40,17 @@ class Outlook:
             logger.critical(f'A pasta "{name_folder}" não foi selecionada, pois a conta "{email_account}" não foi encontrada\nErro: {error_x}')
             raise RuntimeError(f'A pasta "{name_folder}" não foi selecionada, pois a conta "{email_account}" não foi encontrada\nErro: {error_x}') from error_x
 
-    def _get_account_email(self, email_account: str) -> win32com.client.CDispatch|RuntimeError:
+    def _get_account_email(self, email_account: str) -> win32com.client.CDispatch:
         """Função para selecionar uma conta de e-mail no outlook, ex "email@email.com".
         
         :param email_account: Endereço da conta a ser selecionada no Outlook, ex "email@email.com".
         :returns: Pasta do outlook (objeto COM).
         :raises RunTimeError: caso a conta de e-mail não tenha sido encontrada, ex: conta ainda não configurada.
         """
+        logger.debug(f"Outlook._get_account_email: email_account={email_account}")
         try:
             account_email = self.namespace.Folders.Item(email_account)
+            logger.debug(f"Outlook._get_account_email: found account {email_account}")
             return account_email
         except Exception as error_x:
             logger.critical(f'E-mail "{email_account}" não encontrado\nErro: {error_x}')
@@ -62,6 +67,7 @@ class Outlook:
             limit: int | None = None,
             date_outlook: str | None = None
         ) -> list[win32com.client.CDispatch]:
+        logger.debug(f"Outlook.read_emails: email_account={email_account} name_folder={name_folder} subject={subject} sender={sender} unread={unread} has_attachments={has_attachments} limit={limit} date_outlook={date_outlook}")
         """Função para ler os e-mail's de uma conta conforme filtros aplicados.
         
         :param email_account: Conta de e-mail em que serão lidos os e-mail's.
@@ -115,6 +121,7 @@ class Outlook:
             if limit and len(emails) >= limit:
                 break
 
+        logger.debug(f"Outlook.read_emails: returned {len(emails)} emails")
         return emails
 
     def send_email(
@@ -126,7 +133,7 @@ class Outlook:
             cc: list[str] | None = None,
             bcc: list[str] | None = None,
             attachments: list[str] | None = None,
-        ) -> None|RuntimeError:
+        ) -> None:
         """
         Envia um e-mail utilizando o Outlook.
 
@@ -140,6 +147,7 @@ class Outlook:
         :returns None:
         :raises RunTimeError: caso tenha ocorrido erro na tentativa de enviar a mensagem.
         """
+        logger.debug(f"Outlook.send_email: recipients={recipients} subject={subject} html={html} cc={cc} bcc={bcc} attachments={attachments}")
         try:
             mail = self.outlook_app.CreateItem(0)  # olMailItem
 
@@ -162,6 +170,7 @@ class Outlook:
                     mail.Attachments.Add(file)
 
             mail.Send()
+            logger.debug("Outlook.send_email: email enviado com sucesso")
 
         except Exception as error_x:
             logger.error(f"Erro ao enviar e-mail: {error_x}")

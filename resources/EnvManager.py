@@ -10,7 +10,8 @@ class EnvManager:
     :returns None: caso todas variáveis estejam configuradas corretamente.
     :raises EnvironmentError: caso alguma variável esteja ausente.
     """
-    def __init__(self) -> None|EnvironmentError:
+    def __init__(self) -> None:
+        logger.debug("EnvManager.__init__: carregando variáveis de ambiente")
         self.workbooks_path = getenv("PATH_WORKBOOKS")
         env_vars = (self.workbooks_path,)
         if any(var is None for var in env_vars):

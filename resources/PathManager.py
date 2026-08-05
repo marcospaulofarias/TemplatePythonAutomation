@@ -9,6 +9,7 @@ class PathManager:
         :returns None:
         :raises OSError: caso tenha ocorrido falha ao verificar os diretórios configurados.
         """
+        logger.debug("PathManager.__init__: inicializando PathManager")
         self.envmanager = EnvManager()
         self.erros = {}
         self.verify_paths()
@@ -21,9 +22,11 @@ class PathManager:
         
         :returns None:
         """
+        logger.debug(f"PathManager.verify_paths: paths={self.envmanager.paths}")
         for _path in self.envmanager.paths.values():
             try:
                 makedirs(_path, exist_ok=True)
+                logger.debug(f"PathManager.verify_paths: created or exists {_path}")
             except Exception as error:
                 logger.error(f'Diretório "{_path}" não criado | Erro: {error}')
                 self.erros[_path] = error
