@@ -90,7 +90,7 @@ class AutomationCoins:
                             self.initialize_apps()
                             self.manage_coins(send_to=[user], multiply_value=multiply_value, files_to_send=files_to_send)
                             self.finalize_apps()
-                            self.txt.add_to_txt(txt_file='.\\workbooks\\users_ready.txt', data_to_add=[user])
+                            self.txt.add_to_txt(txt_file='.\\workbooks\\users_ready.txt', data_to_add=[user], create_txt=True)
                             logger.info(f"Process completed successfully for user {user}. Email sent with attachments: {files_to_send}.")
                             break  # Exit the retry loop if successful
                         except Exception as e:
