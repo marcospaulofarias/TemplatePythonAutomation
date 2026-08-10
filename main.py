@@ -20,4 +20,4 @@ if __name__ == '__main__':
                 logger.info(f'Process {process_id} marked as ready in processes_ready.txt')
             except Exception as e:
                 logger.error(f'Error running process {process_id}: {e}')
-    
+
