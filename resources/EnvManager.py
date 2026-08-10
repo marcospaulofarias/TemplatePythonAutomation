@@ -24,3 +24,7 @@ class EnvManager:
         self.paths = {
             "workbooks": self.workbooks_path
         }
+
+        self.email_users = {
+            "error_email": getenv("ERROR_EMAIL")
+        }
