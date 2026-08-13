@@ -20,7 +20,7 @@ class PrintAutomation:
         self.process_id = process_id
         self.process_type = process_type
         self.process_machine = process_machine
-        self.env_manager = EnvManager(process_id=process_id, process_type=process_type, process_machine=process_machine)
+        self.env_manager = EnvManager()
         self.outlook = Outlook(process_id=process_id, process_type=process_type, process_machine=process_machine)
         configure_logger(process_id=process_id, process_type=process_type, process_machine=process_machine)
 
