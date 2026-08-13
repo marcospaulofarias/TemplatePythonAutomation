@@ -9,7 +9,11 @@ class Outlook:
     :returns None:
     :raises RunTimeError: caso o Outlook não tenha sido iniciado corretamente.
     """
-    def __init__(self) -> None:
+    def __init__(self, process_id: str = None, process_type: str = None, process_machine: str = None) -> None:
+        self.process_id = process_id
+        self.process_type = process_type
+        self.process_machine = process_machine
+        logger.debug(f"Outlook.__init__: process_id={process_id} process_type={process_type} process_machine={process_machine}")
 
         try:
             self.outlook_app = win32com.client.Dispatch("Outlook.Application")
