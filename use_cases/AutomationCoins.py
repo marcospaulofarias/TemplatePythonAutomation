@@ -76,36 +76,27 @@ class AutomationCoins:
     def run(self, *params, multiply_value: float, files_to_send: list[str], try_attempts: int, time_to_retry: float = 1) -> None:
         logger.debug(f"AutomationCoins.run: files_to_send={files_to_send} multiply_value={multiply_value} try_attempts={try_attempts} time_to_retry={time_to_retry}")
         users = self.get_users()
-        users_ready = self.txt.read_txt(txt_file='.\\workbooks\\users_ready.txt')
-        logger.debug(f"AutomationCoins.run: users={users} users_ready={users_ready}")
-        if not users_ready:
-            self.txt.new_or_overwrite_txt(txt_file='.\\workbooks\\users_ready.txt', data_to_overwrite=[], create_txt=True)
-            users_ready = self.txt.read_txt(txt_file='.\\workbooks\\users_ready.txt')
+        logger.debug(f"AutomationCoins.run: users={users}")
         if users:
             for user in users:
-                if user not in users_ready:
-                    for attempt in range(try_attempts):
-                        try:
-                            self.finalize_apps()
-                            self.initialize_apps()
-                            self.manage_coins(send_to=[user], multiply_value=multiply_value, files_to_send=files_to_send)
-                            self.finalize_apps()
-                            self.txt.add_line_to_txt(txt_file='.\\workbooks\\users_ready.txt', line_to_add=user)
-                            logger.info(f"Process completed successfully for user {user}. Email sent with attachments: {files_to_send}.")
-                            break  # Exit the retry loop if successful
-                        except Exception as e:
-                            sleep(time_to_retry)
-                            logger.warning(f"Attempt {attempt + 1} failed for user {user}: {e}")
-                            if attempt == try_attempts - 1:
-                                logger.error(f"All attempts failed for user {user}. Moving to the next user.")
+                for attempt in range(try_attempts):
+                    try:
+                        self.finalize_apps()
+                        self.initialize_apps()
+                        self.manage_coins(send_to=[user], multiply_value=multiply_value, files_to_send=files_to_send)
+                        self.finalize_apps()
+                        logger.info(f"Process completed successfully for user {user}. Email sent with attachments: {files_to_send}.")
+                        break  # Exit the retry loop if successful
+                    except Exception as e:
+                        sleep(time_to_retry)
+                        logger.warning(f"Attempt {attempt + 1} failed for user {user}: {e}")
+                        if attempt == try_attempts - 1:
+                            logger.error(f"All attempts failed for user {user}. Moving to the next user.")
 
     def get_users(self) -> list[str]:
         users = self.txt.read_txt(txt_file='.\\workbooks\\users.txt')
         users = [user for user in users if user.strip() != '']
-        self.txt.create_empty_txt(txt_file='.\\workbooks\\users_ready.txt', if_not_exists=True)
-        users_ready = self.txt.read_txt(txt_file='.\\workbooks\\users_ready.txt')
-        users = [user for user in users if user not in users_ready]
-        logger.debug(f"AutomationCoins.get_users: returning users={users} users_ready={users_ready}")
+        logger.debug(f"AutomationCoins.get_users: returning users={users}")
         return users
 
 if __name__ == '__main__':
