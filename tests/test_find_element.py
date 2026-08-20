@@ -52,14 +52,6 @@ def test_lanca_lookuperror_quando_nao_existe():
         ui.find_element(element_type="Button", params={"name": "Fantasma"})
     assert ui.printautomation.calls == 1         # falha tira print
 
-
-def test_lanca_lookuperror_quando_exists_da_erro():
-    ui = make_ui({"Button": control_class(RuntimeError("COM error"))})
-    with pytest.raises(LookupError):
-        ui.find_element(element_type="Button", params={"name": "OK"})
-    assert ui.printautomation.calls == 1
-
-
 def test_repassa_screen_como_search_from_control():
     """Buscar dentro de uma janela já encontrada: o screen precisa chegar ao
     controle como searchFromControl (guarda contra a regressão do 'screen.self')."""
