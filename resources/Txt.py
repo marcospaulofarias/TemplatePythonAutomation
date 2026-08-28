@@ -70,7 +70,7 @@ class Txt:
             logger.critical(f'Erro ao sobrescrever com o conteúdo "data_to_overwrite" o arquivo "{txt_file}".\nErro: {error_x}.')
             raise RuntimeError(f'Erro ao sobrescrever com o conteúdo "data_to_overwrite" o arquivo "{txt_file}".\nErro: {error_x}.') from error_x
 
-    def create_empty_txt(self, txt_file: str, if_not_exists: bool = True) -> None:
+    def create_empty_txt(self, txt_file: str, only_if_not_exists: bool = True) -> None:
         """Função para criar um arquivo txt vazio.
         
         :param txt_file: arquivo txt "{caminho}+{nome_arquivo.txt}".
@@ -78,11 +78,16 @@ class Txt:
         :returns None:
         :raises RunTimeError: se houver erro ao criar o arquivo, ex: Diretório do arquivo não existe.
         """
-        logger.debug(f"Txt.create_empty_txt: txt_file={txt_file} if_not_exists={if_not_exists}")
-        if if_not_exists and self.filesmanager.verify_exists_file(txt_file):
-            logger.info(f'O arquivo "{txt_file}" já existe. Nenhuma ação foi tomada.')
-            return
+        logger.debug(f"Txt.create_empty_txt: txt_file={txt_file} only_if_not_exists={only_if_not_exists}")
+        if only_if_not_exists:
+            if self.filesmanager.verify_exists_file(txt_file):
+                logger.info(f'O arquivo "{txt_file}" já existe. Nenhuma ação foi tomada.')
+                return
+        else:
+            if self.filesmanager.verify_exists_file(txt_file):
+                self.filesmanager._rm_file(file_to_remove=txt_file)
         self._create_txt(txt_file=txt_file)
+
 
     def _create_txt(self, txt_file: str, time_limit_to_create: float = 3) -> None:
         """Função para criar o arquivo necessário.
