@@ -10,3 +10,4 @@ workbooks/
 old/
 docs/
 logs/
+*.csv
